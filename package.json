@@ -1,0 +1,20 @@
+{
+    "name": "pumper",
+    "version": "0.0.1",
+    "description": "Pumper JS library",
+    "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Consoletation/pumper.git"
+    },
+    "keywords": [
+        "webaudio",
+        "analyzer"
+    ],
+    "author": "Neil McCallion <skipley@hotmail.com>",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/Consoletation/pumper/issues"
+    },
+    "homepage": "https://github.com/Consoletation/pumper#readme"
+}
