@@ -1,6 +1,6 @@
 {
     "name": "pumper",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "description": "Pumper JS library",
     "main": "index.js",
     "repository": {
