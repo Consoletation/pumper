@@ -145,7 +145,11 @@ Pumper.start = function(srcValue, autoPlay) {
       .webkitGetUserMedia || navigator.mozGetUserMedia || navigator
       .msGetUserMedia);
     navigator.getMedia({
-        audio: true,
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
         video: false
       },
       function(stream) {
