@@ -156,8 +156,7 @@ Pumper.start = function(srcValue, autoPlay) {
                 micStream = stream;
                 // TODO: throw 'ready' event
                 source = AUDIO.createMediaStreamSource(stream);
-                source.connect(analyzer);
-                analyzer.connect(AUDIO.destination);
+                source.connect(analyzer); // Don't connect mic to output
                 console.log('Pumper: mic stream ready');
             },
             function(error) {
