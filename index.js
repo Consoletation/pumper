@@ -68,12 +68,14 @@ var AUDIO, source, analyzer,
  * 'Band' (frequency range) class.
  **/
 function Band(start, end, threshold, spikeTolerance) {
-    if (start === undefined || end === undefined) __throw('Band creation requires start and end params');
+    if (start === undefined || end === undefined) __throw(
+        'Band creation requires start and end params');
 
     this.start = start;
     this.end = end;
     this.threshold = (threshold === undefined) ? DEFAULTS.threshold : threshold;
-    this.spikeTolerance = (spikeTolerance === undefined) ? DEFAULTS.spikeTolerance : spikeTolerance;
+    this.spikeTolerance = (spikeTolerance === undefined) ? DEFAULTS
+        .spikeTolerance : spikeTolerance;
 
     this.volume = 0;
     this._calcTotal = 0;
@@ -139,9 +141,15 @@ Pumper.start = function(srcValue, autoPlay) {
 
     if (FORCE_MIC || srcValue === 'mic') {
         // Request mic access, create source node and connect to analyzer
-        navigator.getMedia = (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
+        navigator.getMedia = (navigator.getUserMedia || navigator
+            .webkitGetUserMedia || navigator.mozGetUserMedia || navigator
+            .msGetUserMedia);
         navigator.getMedia({
-                audio: true,
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false,
+                },
                 video: false
             },
             function(stream) {
