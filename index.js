@@ -192,6 +192,13 @@ Pumper.play = function() {
 };
 
 /**
+ * Resumes the audio context.
+ **/
+Pumper.resume = function() {
+    AUDIO.resume();
+};
+
+/**
  * Create a new freq watcher (band)
  **/
 Pumper.createBand = function(start, end, threshold, spikeTolerance) {
