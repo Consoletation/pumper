@@ -122,11 +122,10 @@ Pumper.bands = [];
  * Start the engine.
  * @param source - audio URL or 'mic'
  **/
-Pumper.start = function(srcValue, start = 0.04, end = 0.35, fftSize = 2048) {
+Pumper.start = function(srcValue, start = 0.08, end = 0.7, fftSize = 2048) {
     if (!srcValue) __err('Missing "source" param');
     Pumper.start = rangeCheck(start);
     Pumper.end = rangeCheck(end);
-    Pumper.fftSize = fftSize;
 
     var ipt = getURLParam('input');
     console.log('URL PARAM', ipt);
@@ -139,7 +138,7 @@ Pumper.start = function(srcValue, start = 0.04, end = 0.35, fftSize = 2048) {
 
     // Set up analyzer and buffers
     analyzer = AUDIO.createAnalyser();
-    analyzer.fftSize = Pumper.fftSize;
+    analyzer.fftSize = fftSize;
     analyzer.minDecibels = -90;
     analyzer.maxDecibels = -10;
 
@@ -255,11 +254,11 @@ Pumper.update = function() {
     Pumper.timeData = timeData;
 
     // Calc global volume
-    var rangeStart = Math.floor(Pumper.start * Pumper.fftSize);
-    var rangeEnd = Math.floor(Pumper.end * Pumper.fftSize);
+    var rangeStart = Math.round(Pumper.start * (Pumper.freqDataLength - 1));
+    var rangeEnd = Math.round(Pumper.end * (Pumper.freqDataLength - 1));
 
     var globTotal = 0;
-    for (var i = rangeStart; i < rangeEnd; i++) {
+    for (var i = rangeStart; i <= rangeEnd; i++) {
         globTotal += freqData[i];
     }
     // TODO: add sensitivity control
@@ -280,10 +279,10 @@ Pumper.update = function() {
 
     // Calc band volume levels
     Pumper.bands.forEach(function(band) {
-        var bRangeStart = Math.floor(band.start * Pumper.fftSize);
-        var bRangeEnd = Math.floor(band.end * Pumper.fftSize);
+        var bRangeStart = Math.round(band.start * (Pumper.freqDataLength - 1));
+        var bRangeEnd = Math.round(band.end * (Pumper.freqDataLength - 1));
         var bandTotal = 0;
-        for (var i = bRangeStart; i < bRangeEnd; i++) {
+        for (var i = bRangeStart; i <= bRangeEnd; i++) {
             bandTotal += freqData[i];
         }
         var bandVolume = bandTotal / (bRangeEnd - bRangeStart);
