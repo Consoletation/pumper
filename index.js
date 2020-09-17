@@ -38,8 +38,8 @@ var DEFAULTS = {
     spikeTolerance: 30
 };
 
-var RANGE_START = 10,
-    RANGE_END = 90;
+var RANGE_START = 0.04,
+    RANGE_END = 0.35;
 
 function __err(msg) {
     throw 'Pumper error: ' + msg;
@@ -67,18 +67,22 @@ var AUDIO, source, analyzer,
 /**
  * 'Band' (frequency range) class.
  **/
-function Band(start, end, threshold, spikeTolerance) {
-    if (start === undefined || end === undefined) __throw(
-        'Band creation requires start and end params');
+function Band(
+    start = 0, end = 1, threshold = DEFAULTS.threshold,
+    spikeTolerance = DEFAULTS.spikeTolerance, volScale = 1,
+    globalRange = true
+) {
 
-    this.start = start;
-    this.end = end;
-    this.threshold = (threshold === undefined) ? DEFAULTS.threshold : threshold;
-    this.spikeTolerance = (spikeTolerance === undefined) ? DEFAULTS
-        .spikeTolerance : spikeTolerance;
+    if (globalRange) {
+        this.start = RANGE_START + start;
+        this.end = RANGE_END * end;
+    } else {
+        this.start = start;
+        this.end = end;
+    }
+    this.volScale = volScale;
 
     this.volume = 0;
-    this._calcTotal = 0;
 
     this.isOverThreshold = false;
     this.isSpiking = false;
@@ -115,10 +119,9 @@ Pumper.bands = [];
  * Start the engine.
  * @param source - audio URL or 'mic'
  **/
-Pumper.start = function(srcValue, autoPlay, fftSize = 256) {
+Pumper.start = function(srcValue, autoPlay = false, fftSize = 256) {
     if (!srcValue) __err('Missing "source" param');
-
-    if (autoPlay === undefined) autoPlay = false;
+    Pumper.fftSize = fftSize;
 
     var ipt = getURLParam('input');
     console.log('URL PARAM', ipt);
@@ -131,7 +134,7 @@ Pumper.start = function(srcValue, autoPlay, fftSize = 256) {
 
     // Set up analyzer and buffers
     analyzer = AUDIO.createAnalyser();
-    analyzer.fftSize = fftSize;
+    analyzer.fftSize = Pumper.fftSize;
     analyzer.minDecibels = -90;
     analyzer.maxDecibels = -10;
 
@@ -203,8 +206,15 @@ Pumper.resume = function() {
 /**
  * Create a new freq watcher (band)
  **/
-Pumper.createBand = function(start, end, threshold, spikeTolerance) {
-    var b = new Band(start, end, threshold, spikeTolerance);
+Pumper.createBand = function(
+    start = 0, end = 1, threshold = DEFAULTS.threshold,
+    spikeTolerance = DEFAULTS.spikeTolerance, volScale = 1,
+    globalRange = true
+) {
+    var b = new Band(
+        start, end, threshold, spikeTolerance,
+        volScale, globalRange
+    );
     Pumper.bands.push(b);
     return b;
 };
@@ -220,23 +230,24 @@ Pumper.update = function() {
     analyzer.getByteTimeDomainData(timeData);
     Pumper.timeData = timeData;
 
-    var rangeSize = RANGE_END - RANGE_START,
-        globTotal = 0;
-
     // Calc global volume
-    for (var i = RANGE_START; i < RANGE_END; i++) {
+    var rangeStart = Math.floor(RANGE_START * Pumper.fftSize);
+    var rangeEnd = Math.floor(RANGE_END * Pumper.fftSize);
+
+    var globTotal = 0;
+    for (var i = rangeStart; i < rangeEnd; i++) {
         globTotal += freqData[i];
     }
     // TODO: add sensitivity control
 
     // TODO: fire global events
-    var gvol = globTotal / rangeSize;
-    if (gvol - Pumper.volume > Pumper.globalSpikeTolerance) {
+    var globalVolume = globTotal / (rangeEnd - rangeStart);
+    if (globalVolume - Pumper.volume > Pumper.globalSpikeTolerance) {
         Pumper.isSpiking = true;
     } else {
         Pumper.isSpiking = false;
     }
-    Pumper.volume = gvol;
+    Pumper.volume = globalVolume;
     if (Pumper.volume >= Pumper.globalThreshold) {
         Pumper.isOverThreshold = true;
     } else {
@@ -245,18 +256,21 @@ Pumper.update = function() {
 
     // Calc band volume levels
     Pumper.bands.forEach(function(band) {
-        var total = 0;
-        for (var i = band.start; i < band.end; i++) {
-            total += freqData[i];
+        var bRangeStart = Math.floor(band.start * Pumper.fftSize);
+        var bRangeEnd = Math.floor(band.end * Pumper.fftSize);
+        var bandTotal = 0;
+        for (var i = bRangeStart; i < bRangeEnd; i++) {
+            bandTotal += freqData[i];
         }
-        var vol = total / (band.end - band.start);
-        if (vol - band.volume > band.spikeTolerance) {
+        var bandVolume = bandTotal / (bRangeEnd - bRangeStart);
+        bandVolume = bandVolume * band.volScale;
+        if (bandVolume - band.volume > band.spikeTolerance) {
             band.isSpiking = true;
-            band._onSpike(vol - band.volume);
+            band._onSpike(bandVolume - band.volume);
         } else {
             band.isSpiking = false;
         }
-        band.volume = vol;
+        band.volume = bandVolume;
         if (band.volume >= band.threshold) {
             band.isOverThreshold = true;
             band._onThreshold();

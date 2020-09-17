@@ -14,7 +14,7 @@ Instantiated as a singleton - pass it around the app via require().
 - `Pumper.update()`
      - updates all exposed properties with latest data
 
-- `Pumper.createBand(rangeStart, rangeEnd, threshold, spikeTolerance)`
+- `Pumper.createBand(start, end, threshold, spikeTolerance, volScale=1, globalRange=true)`
      - creates a new frequency range monitor and returns the instance
 
 Exposed properties:
