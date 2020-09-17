@@ -18,12 +18,11 @@
  * - Pumper.update()
  *      - updates all exposed properties with latest data
  *
- * - Pumper.createBand(start, end, threshold, spikeTolerance, volScale = 1,
- *                     globalRange=true)
+ * - Pumper.createBand(start, end, threshold, spikeTolerance, volScale = 1)
  *      - creates a new frequency range monitor and returns the instance
  *      - 'start' and 'end' define the band frequency ranges (0-1)
+ *      - frequency range is scaled to global values
  *      - 'volScale' optionally multiplies returned volume values
- *      - 'globalRange' clamps the band parameters to thee global range
  *
  * Exposed properties:
  * - Pumper.bands - array of all Band instances in the order they were created
@@ -80,17 +79,10 @@ var AUDIO, source, analyzer,
  **/
 function Band(
     start = 0, end = 1, threshold = DEFAULTS.threshold,
-    spikeTolerance = DEFAULTS.spikeTolerance, volScale = 1,
-    globalRange = true
+    spikeTolerance = DEFAULTS.spikeTolerance, volScale = 1
 ) {
-
-    if (globalRange) {
-        this.start = rangeCheck(Pumper.start * (start + 1));
-        this.end = rangeCheck(Pumper.end * end);
-    } else {
-        this.start = rangeCheck(start);
-        this.end = rangeCheck(end);
-    }
+    this.start = rangeCheck(start);
+    this.end = rangeCheck(end);
     this.volScale = volScale;
 
     this.volume = 0;
@@ -220,15 +212,18 @@ Pumper.resume = function() {
  **/
 Pumper.createBand = function(
     start = 0, end = 1, threshold = DEFAULTS.threshold,
-    spikeTolerance = DEFAULTS.spikeTolerance, volScale = 1,
-    globalRange = true
+    spikeTolerance = DEFAULTS.spikeTolerance, volScale = 1
 ) {
-    var b = new Band(
-        start, end, threshold, spikeTolerance,
-        volScale, globalRange
+    // Scale band sizes to global
+    var range = Pumper.end - Pumper.start;
+    var band = new Band(
+        Pumper.start + range * start,
+        Pumper.start + range * end,
+        threshold, spikeTolerance,
+        volScale
     );
-    Pumper.bands.push(b);
-    return b;
+    Pumper.bands.push(band);
+    return band;
 };
 
 /**

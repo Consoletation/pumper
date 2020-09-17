@@ -16,12 +16,11 @@ Instantiated as a singleton - pass it around the app via require().
 - `Pumper.update()`
      - updates all exposed properties with latest data
 
-- `Pumper.createBand(start, end, threshold, spikeTolerance, volScale = 1,
-                     globalRange=true)`
+- `Pumper.createBand(start, end, threshold, spikeTolerance, volScale = 1)`
      - creates a new frequency range monitor and returns the instance
      - 'start' and 'end' define the band frequency ranges (0-1)
+     - frequency range is scaled to global values
      - 'volScale' optionally multiplies returned volume values
-     - 'globalRange' clamps the band parameters to thee global range
 
 Exposed properties:
 - `Pumper.bands` - array of all Band instances in the order they were created
