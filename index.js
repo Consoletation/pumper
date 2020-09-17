@@ -38,9 +38,6 @@ var DEFAULTS = {
     spikeTolerance: 30
 };
 
-var RANGE_START = 0.04,
-    RANGE_END = 0.35;
-
 function __err(msg) {
     throw 'Pumper error: ' + msg;
 }
@@ -82,8 +79,8 @@ function Band(
 ) {
 
     if (globalRange) {
-        this.start = rangeCheck(RANGE_START + start);
-        this.end = rangeCheck(RANGE_END * end);
+        this.start = rangeCheck(Pumper.start + start);
+        this.end = rangeCheck(Pumper.end * end);
     } else {
         this.start = rangeCheck(start);
         this.end = rangeCheck(end);
@@ -127,9 +124,11 @@ Pumper.bands = [];
  * Start the engine.
  * @param source - audio URL or 'mic'
  **/
-Pumper.start = function(srcValue, autoPlay = false, fftSize = 256) {
+Pumper.start = function(srcValue, autoPlay = false, fftSize = 256, start = 0.04, end = 0.35) {
     if (!srcValue) __err('Missing "source" param');
     Pumper.fftSize = fftSize;
+    Pumper.start = rangeCheck(start);
+    Pumper.end = rangeCheck(end);
 
     var ipt = getURLParam('input');
     console.log('URL PARAM', ipt);
@@ -239,8 +238,8 @@ Pumper.update = function() {
     Pumper.timeData = timeData;
 
     // Calc global volume
-    var rangeStart = Math.floor(RANGE_START * Pumper.fftSize);
-    var rangeEnd = Math.floor(RANGE_END * Pumper.fftSize);
+    var rangeStart = Math.floor(Pumper.start * Pumper.fftSize);
+    var rangeEnd = Math.floor(Pumper.end * Pumper.fftSize);
 
     var globTotal = 0;
     for (var i = rangeStart; i < rangeEnd; i++) {
