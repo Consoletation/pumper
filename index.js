@@ -10,7 +10,7 @@
  * Instantiated as a singleton - pass it around the app via require().
  *
  * API:
- * - Pumper.start(source, doAutoplay)
+ * - Pumper.start(source)
  *      - source can be a media URL or 'mic'
  *
  * - Pumper.update()
@@ -124,7 +124,7 @@ Pumper.bands = [];
  * Start the engine.
  * @param source - audio URL or 'mic'
  **/
-Pumper.start = function(srcValue, autoPlay = false, fftSize = 2048, start = 0.04, end = 0.35) {
+Pumper.start = function(srcValue, fftSize = 2048, start = 0.04, end = 0.35) {
     if (!srcValue) __err('Missing "source" param');
     Pumper.fftSize = fftSize;
     Pumper.start = rangeCheck(start);
@@ -179,7 +179,6 @@ Pumper.start = function(srcValue, autoPlay = false, fftSize = 2048, start = 0.04
         // Load track, create source node and connect to analyzer
         var track = document.createElement('audio');
         track.setAttribute('src', srcValue);
-        track.autoplay = autoPlay;
         track.crossOrigin = 'anonymous';
         source = AUDIO.createMediaElementSource(track);
         source.connect(analyzer);

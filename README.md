@@ -8,7 +8,7 @@ visualizations.
 Instantiated as a singleton - pass it around the app via require().
 
 ## API:
-- `Pumper.start(source, doAutoplay, fftSize=256, start=0.04, end=0.35)`
+- `Pumper.start(source, fftSize=256, start=0.04, end=0.35)`
      - source can be a media URL or 'mic'
 
 - `Pumper.update()`
