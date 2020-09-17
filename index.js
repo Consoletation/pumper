@@ -79,7 +79,7 @@ function Band(
 ) {
 
     if (globalRange) {
-        this.start = rangeCheck(Pumper.start + start);
+        this.start = rangeCheck(Pumper.start * (start + 1));
         this.end = rangeCheck(Pumper.end * end);
     } else {
         this.start = rangeCheck(start);
