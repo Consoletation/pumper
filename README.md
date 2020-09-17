@@ -8,14 +8,20 @@ visualizations.
 Instantiated as a singleton - pass it around the app via require().
 
 ## API:
-- `Pumper.start(source, fftSize=256, start=0.04, end=0.35)`
+- `Pumper.start(source, start = 0.04, end = 0.35, fftSize = 2048)`
      - source can be a media URL or 'mic'
+     - 'start' and 'end' define the global frequency ranges
+     - fftSize will decide how many sections the analyzer will have
 
 - `Pumper.update()`
      - updates all exposed properties with latest data
 
-- `Pumper.createBand(start, end, threshold, spikeTolerance, volScale=1, globalRange=true)`
+- `Pumper.createBand(start, end, threshold, spikeTolerance, volScale = 1,
+                     globalRange=true)`
      - creates a new frequency range monitor and returns the instance
+     - 'start' and 'end' define the band frequency ranges (0-1)
+     - 'volScale' optionally multiplies returned volume values
+     - 'globalRange' clamps the band parameters to thee global range
 
 Exposed properties:
 - `Pumper.bands` - array of all Band instances in the order they were created

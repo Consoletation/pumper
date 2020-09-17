@@ -10,14 +10,20 @@
  * Instantiated as a singleton - pass it around the app via require().
  *
  * API:
- * - Pumper.start(source)
+ * - Pumper.start(source, start = 0.04, end = 0.35, fftSize = 2048)
  *      - source can be a media URL or 'mic'
+ *      - 'start' and 'end' define the global frequency ranges
+ *      - fftSize will decide how many sections the analyzer will have
  *
  * - Pumper.update()
  *      - updates all exposed properties with latest data
  *
- * - Pumper.createBand(rangeStart, rangeEnd, threshold, spikeTolerance)
+ * - Pumper.createBand(start, end, threshold, spikeTolerance, volScale = 1,
+ *                     globalRange=true)
  *      - creates a new frequency range monitor and returns the instance
+ *      - 'start' and 'end' define the band frequency ranges (0-1)
+ *      - 'volScale' optionally multiplies returned volume values
+ *      - 'globalRange' clamps the band parameters to thee global range
  *
  * Exposed properties:
  * - Pumper.bands - array of all Band instances in the order they were created
@@ -124,11 +130,11 @@ Pumper.bands = [];
  * Start the engine.
  * @param source - audio URL or 'mic'
  **/
-Pumper.start = function(srcValue, fftSize = 2048, start = 0.04, end = 0.35) {
+Pumper.start = function(srcValue, start = 0.04, end = 0.35, fftSize = 2048) {
     if (!srcValue) __err('Missing "source" param');
-    Pumper.fftSize = fftSize;
     Pumper.start = rangeCheck(start);
     Pumper.end = rangeCheck(end);
+    Pumper.fftSize = fftSize;
 
     var ipt = getURLParam('input');
     console.log('URL PARAM', ipt);
