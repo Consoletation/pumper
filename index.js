@@ -132,6 +132,8 @@ Pumper.start = function(srcValue, autoPlay, fftSize = 256) {
     // Set up analyzer and buffers
     analyzer = AUDIO.createAnalyser();
     analyzer.fftSize = fftSize;
+    analyzer.minDecibels = -90;
+    analyzer.maxDecibels = -10;
 
     Pumper.freqDataLength = freqDataLength = analyzer.frequencyBinCount;
     Pumper.timeDataLength = timeDataLength = analyzer.frequencyBinCount;
