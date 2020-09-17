@@ -58,6 +58,14 @@ function getURLParam(name, url) {
     return results == null ? null : results[1];
 }
 
+function rangeCheck(range) {
+    if (range >= 0 && range <= 1) {
+        return range;
+    } else {
+        throw 'Pumper error: Range ' + range + ' is out of bounds!'
+    }
+}
+
 var AUDIO, source, analyzer,
     timeData, freqData,
     timeDataLength, freqDataLength,
@@ -74,11 +82,11 @@ function Band(
 ) {
 
     if (globalRange) {
-        this.start = RANGE_START + start;
-        this.end = RANGE_END * end;
+        this.start = rangeCheck(RANGE_START + start);
+        this.end = rangeCheck(RANGE_END * end);
     } else {
-        this.start = start;
-        this.end = end;
+        this.start = rangeCheck(start);
+        this.end = rangeCheck(end);
     }
     this.volScale = volScale;
 
