@@ -227,6 +227,23 @@ Pumper.createBand = function(
 };
 
 /**
+ * Create a range of bands over the global scale
+ **/
+Pumper.createBands = function(count, volStart = 1, volEnd = 1) {
+    // Scale volume over created bands
+    var volRange = volEnd - volStart;
+    for (var band = 0; band < count; band++) {
+        Pumper.createBand(
+            band / count, // start
+            (band + 1) / count, // end
+            Pumper.globalThreshold,
+            Pumper.globalSpikeTolerance,
+            volStart + volRange * band / count // volScale
+        );
+    }
+}
+
+/**
  * Performs analysis on the current audio, updates any registered bands.
  **/
 Pumper.update = function() {
