@@ -124,7 +124,7 @@ Pumper.bands = [];
  * Start the engine.
  * @param source - audio URL or 'mic'
  **/
-Pumper.start = function(srcValue, autoPlay = false, fftSize = 256, start = 0.04, end = 0.35) {
+Pumper.start = function(srcValue, autoPlay = false, fftSize = 2048, start = 0.04, end = 0.35) {
     if (!srcValue) __err('Missing "source" param');
     Pumper.fftSize = fftSize;
     Pumper.start = rangeCheck(start);
