@@ -115,7 +115,7 @@ Pumper.bands = [];
  * Start the engine.
  * @param source - audio URL or 'mic'
  **/
-Pumper.start = function(srcValue, autoPlay) {
+Pumper.start = function(srcValue, autoPlay, fftSize = 256) {
     if (!srcValue) __err('Missing "source" param');
 
     if (autoPlay === undefined) autoPlay = false;
@@ -131,7 +131,7 @@ Pumper.start = function(srcValue, autoPlay) {
 
     // Set up analyzer and buffers
     analyzer = AUDIO.createAnalyser();
-    analyzer.fftSize = 256;
+    analyzer.fftSize = fftSize;
 
     Pumper.freqDataLength = freqDataLength = analyzer.frequencyBinCount;
     Pumper.timeDataLength = timeDataLength = analyzer.frequencyBinCount;
