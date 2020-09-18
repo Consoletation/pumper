@@ -228,14 +228,15 @@ Pumper.createBand = function(
 /**
  * Create a range of bands over the global scale
  **/
-Pumper.createBands = function(start = 20, end = 20000, count = 1, volStart = 1, volEnd = 1) {
+Pumper.createBands = function(start = 20, end = 20000, count = 1, volStart = 1, volEnd = 1, bleed = 0) {
     // Scale volume over created bands
     var freqRange = end - start;
     var volRange = volEnd - volStart;
+    var bleedVal = freqRange / count * bleed;
     for (var band = 0; band < count; band++) {
         Pumper.createBand(
-            start + freqRange * band / count, // start
-            start + freqRange * (band + 1) / count, // end
+            start + (freqRange * band / count) - bleedVal, // start
+            start + (freqRange * (band + 1) / count) + bleedVal, // end
             Pumper.globalThreshold,
             Pumper.globalSpikeTolerance,
             volStart + volRange * band / count // volScale
