@@ -8,7 +8,7 @@ visualizations.
 Instantiated as a singleton - pass it around the app via require().
 
 ## API:
-- `Pumper.start(source, start = 0.04, end = 0.35, fftSize = 2048)`
+- `Pumper.start(source, start = 1920, end = 16800, fftSize = 2048)`
      - source can be a media URL or 'mic'
      - 'start' and 'end' define the global frequency ranges
      - fftSize will decide how many sections the analyzer will have
@@ -18,7 +18,7 @@ Instantiated as a singleton - pass it around the app via require().
 
 - `Pumper.createBand(start, end, threshold, spikeTolerance, volScale = 1)`
      - creates a new frequency range monitor and returns the instance
-     - 'start' and 'end' define the band frequency ranges (0-1)
+     - 'start' and 'end' define the band frequency ranges
      - frequency range is scaled to global values
      - 'volScale' optionally multiplies returned volume values
 
