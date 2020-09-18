@@ -212,14 +212,12 @@ Pumper.resume = function() {
  * Create a new freq watcher (band)
  **/
 Pumper.createBand = function(
-    start = 0, end = 1, threshold = DEFAULTS.threshold,
+    start = 20, end = 20000, threshold = DEFAULTS.threshold,
     spikeTolerance = DEFAULTS.spikeTolerance, volScale = 1
 ) {
-    // Scale band sizes to global
-    var range = Pumper.end - Pumper.start;
     var band = new Band(
-        Pumper.start + range * start,
-        Pumper.start + range * end,
+        start,
+        end,
         threshold, spikeTolerance,
         volScale
     );
@@ -230,13 +228,14 @@ Pumper.createBand = function(
 /**
  * Create a range of bands over the global scale
  **/
-Pumper.createBands = function(count, volStart = 1, volEnd = 1) {
+Pumper.createBands = function(start = 20, end = 20000, count = 1, volStart = 1, volEnd = 1) {
     // Scale volume over created bands
+    var freqRange = end - start;
     var volRange = volEnd - volStart;
     for (var band = 0; band < count; band++) {
         Pumper.createBand(
-            band / count, // start
-            (band + 1) / count, // end
+            start + freqRange * band / count, // start
+            start + freqRange * (band + 1) / count, // end
             Pumper.globalThreshold,
             Pumper.globalSpikeTolerance,
             volStart + volRange * band / count // volScale
