@@ -8,10 +8,10 @@ visualizations.
 Instantiated as a singleton - pass it around the app via require().
 
 ## API:
-- `Pumper.start(source, start = 1920, end = 16800, fftSize = 2048)`
+- `Pumper.start(source, start = 1920, end = 16800, precision = 11)`
      - source can be a media URL or 'mic'
      - 'start' and 'end' define the global frequency ranges
-     - fftSize will decide how many sections the analyzer will have
+     - precision will decide how many lookups the analyzer will have
 
 - `Pumper.update()`
      - updates all exposed properties with latest data

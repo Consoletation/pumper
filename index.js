@@ -10,10 +10,10 @@
  * Instantiated as a singleton - pass it around the app via require().
  *
  * API:
- * - Pumper.start(source, start = 1920, end = 16800, fftSize = 2048)
+ * - Pumper.start(source, start = 1920, end = 16800, precision = 12)
  *      - source can be a media URL or 'mic'
  *      - 'start' and 'end' define the global frequency ranges
- *      - fftSize will decide how many sections the analyzer will have
+ *      - precision will decide how many lookups the analyzer will have
  *
  * - Pumper.update()
  *      - updates all exposed properties with latest data
@@ -122,7 +122,7 @@ Pumper.bands = [];
  * Start the engine.
  * @param source - audio URL or 'mic'
  **/
-Pumper.start = function(srcValue, start = 880, end = 7720, fftSize = 2048) {
+Pumper.start = function(srcValue, start = 880, end = 7720, precision = 12) {
     if (!srcValue) __err('Missing "source" param');
 
     var ipt = getURLParam('input');
@@ -137,7 +137,7 @@ Pumper.start = function(srcValue, start = 880, end = 7720, fftSize = 2048) {
     // Set up analyzer and buffers
     analyzer = AUDIO.createAnalyser();
     maxFreq = AUDIO.sampleRate / 2;
-    analyzer.fftSize = fftSize;
+    analyzer.fftSize = Math.pow(2, precision);
     analyzer.minDecibels = -90;
     analyzer.maxDecibels = -10;
 
