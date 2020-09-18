@@ -248,6 +248,8 @@ Pumper.createBands = function(count, volStart = 1, volEnd = 1) {
  * Performs analysis on the current audio, updates any registered bands.
  **/
 Pumper.update = function() {
+    // Update maxFreq in case sample rate changed
+    maxFreq = AUDIO.sampleRate / 2;
 
     analyzer.getByteFrequencyData(freqData);
     Pumper.freqData = freqData;
