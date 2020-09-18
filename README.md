@@ -31,3 +31,15 @@ Exposed properties:
 - `Pumper.isOverThreshold` - true if the current global volume exceeds the set global threshold
 - `Pumper.freqData` - raw frequency data array
 - `Pumper.timeData` - raw time domain data array
+
+## Examples
+- `Pumper.start('mic', 1160, 14000, 13)`
+  Initializes Pumper and uses default audio input as source.
+- `Pumper.createBands(80, 220, 10, 1, 1.25, 0.5)`
+  Create a set of bands (10) over bass frequencies:
+     - Volume of first band is 1x, last band is 1.25x multiplied
+     - Bleed amount of 0.5 (overlap halfway with each band)
+- `Pumper.update()`
+  Updates the frequency data of global and band values, and calculates volume
+- `Pumper.bands[0].volume`
+  Volume of the first bass band we created
