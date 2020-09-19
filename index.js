@@ -222,6 +222,14 @@ Pumper.createBand = function(
         volScale
     );
     Pumper.bands.push(band);
+
+    //Debug
+    var bRangeStart = Math.round(band.start / maxFreq * (Pumper.freqDataLength - 1));
+    var bRangeEnd = Math.round(band.end / maxFreq * (Pumper.freqDataLength - 1));
+    console.log("lookups per band: ", bRangeEnd - bRangeStart);
+    console.log("range: ", bRangeStart, ", ", bRangeEnd);
+    console.log("volume: ", volScale);
+
     return band;
 };
 
