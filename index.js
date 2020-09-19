@@ -43,14 +43,6 @@ const DEFAULTS = {
     spikeTolerance: 30
 };
 
-function __err(msg) {
-    throw 'Pumper error: ' + msg;
-}
-
-function __warn(msg) {
-    throw 'Pumper: ' + msg;
-}
-
 function getURLParam(name, url) {
     if (!url) url = location.href
     name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
@@ -123,7 +115,7 @@ Pumper.bands = [];
  * @param source - audio URL or 'mic'
  **/
 Pumper.start = function(srcValue, start = 880, end = 7720, precision = 12) {
-    if (!srcValue) __err('Missing "source" param');
+    if (!srcValue) throw 'Pumper error: Missing "source" param';
 
     const ipt = getURLParam('input');
     console.log('URL PARAM', ipt);
@@ -132,7 +124,7 @@ Pumper.start = function(srcValue, start = 880, end = 7720, precision = 12) {
 
     // Init Web Audio API context
     AUDIO = new(window.AudioContext || window.webkitAudioContext)();
-    if (!AUDIO) __err('Web Audio API not supported :(');
+    if (!AUDIO) throw 'Pumper error: Web Audio API not supported :(';
 
     // Set up analyzer and buffers
     analyzer = AUDIO.createAnalyser();
@@ -171,7 +163,7 @@ Pumper.start = function(srcValue, start = 880, end = 7720, precision = 12) {
                 console.log('Pumper: mic stream ready');
             },
             function(error) {
-                __err('Error opening microphone stream');
+                throw 'Pumper error: Error opening microphone stream';
             }
         );
     } else {
@@ -195,7 +187,7 @@ Pumper.start = function(srcValue, start = 880, end = 7720, precision = 12) {
  **/
 Pumper.play = function() {
     if (!source instanceof MediaElementAudioSourceNode) {
-        __warn('Source is not ready or is not a media element');
+        throw 'Pumper: Source is not ready or is not a media element';
         return false;
     }
     source.mediaElement.play();
