@@ -36,9 +36,9 @@
  **/
 
 // Force the use of the mic, ignoring any start() params
-var FORCE_MIC = false;
+let FORCE_MIC = false;
 
-var DEFAULTS = {
+const DEFAULTS = {
     threshold: 127,
     spikeTolerance: 30
 };
@@ -54,9 +54,9 @@ function __warn(msg) {
 function getURLParam(name, url) {
     if (!url) url = location.href
     name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-    var regexS = "[\\?&]" + name + "=([^&#]*)";
-    var regex = new RegExp(regexS);
-    var results = regex.exec(url);
+    const regexS = "[\\?&]" + name + "=([^&#]*)";
+    const regex = new RegExp(regexS);
+    const results = regex.exec(url);
     return results == null ? null : results[1];
 }
 
@@ -96,7 +96,7 @@ function Band(
     };
 
     this._onThreshold = function() {
-        var over = this.volume - this.threshold;
+        const over = this.volume - this.threshold;
         // TODO: fire event
 
     };
@@ -125,7 +125,7 @@ Pumper.bands = [];
 Pumper.start = function(srcValue, start = 880, end = 7720, precision = 12) {
     if (!srcValue) __err('Missing "source" param');
 
-    var ipt = getURLParam('input');
+    const ipt = getURLParam('input');
     console.log('URL PARAM', ipt);
     if (ipt === 'mic') FORCE_MIC = true;
 
@@ -230,10 +230,10 @@ Pumper.createBand = function(
  **/
 Pumper.createBands = function(start = 20, end = 20000, count = 1, volStart = 1, volEnd = 1, bleed = 0) {
     // Scale volume over created bands
-    var freqRange = end - start;
-    var volRange = volEnd - volStart;
-    var bleedVal = freqRange / count * bleed;
-    for (var band = 0; band < count; band++) {
+    const freqRange = end - start;
+    const volRange = volEnd - volStart;
+    const bleedVal = freqRange / count * bleed;
+    for (let band = 0; band < count; band++) {
         Pumper.createBand(
             start + (freqRange * band / count) - bleedVal, // start
             start + (freqRange * (band + 1) / count) + bleedVal, // end
@@ -258,17 +258,17 @@ Pumper.update = function() {
     Pumper.timeData = timeData;
 
     // Calc global volume
-    var rangeStart = Math.round(Pumper.start / maxFreq * (Pumper.freqDataLength - 1));
-    var rangeEnd = Math.round(Pumper.end / maxFreq * (Pumper.freqDataLength - 1));
+    const rangeStart = Math.round(Pumper.start / maxFreq * (Pumper.freqDataLength - 1));
+    const rangeEnd = Math.round(Pumper.end / maxFreq * (Pumper.freqDataLength - 1));
 
-    var globTotal = 0;
-    for (var i = rangeStart; i <= rangeEnd; i++) {
+    let globTotal = 0;
+    for (let i = rangeStart; i <= rangeEnd; i++) {
         globTotal += freqData[i];
     }
     // TODO: add sensitivity control
 
     // TODO: fire global events
-    var globalVolume = globTotal / (rangeEnd - rangeStart);
+    const globalVolume = globTotal / (rangeEnd - rangeStart);
     if (globalVolume - Pumper.volume > Pumper.globalSpikeTolerance) {
         Pumper.isSpiking = true;
     } else {
@@ -283,13 +283,13 @@ Pumper.update = function() {
 
     // Calc band volume levels
     Pumper.bands.forEach(function(band) {
-        var bRangeStart = Math.round(band.start / maxFreq * (Pumper.freqDataLength - 1));
-        var bRangeEnd = Math.round(band.end / maxFreq * (Pumper.freqDataLength - 1));
-        var bandTotal = 0;
-        for (var i = bRangeStart; i <= bRangeEnd; i++) {
+        const bRangeStart = Math.round(band.start / maxFreq * (Pumper.freqDataLength - 1));
+        const bRangeEnd = Math.round(band.end / maxFreq * (Pumper.freqDataLength - 1));
+        let bandTotal = 0;
+        for (let i = bRangeStart; i <= bRangeEnd; i++) {
             bandTotal += freqData[i];
         }
-        var bandVolume = bandTotal / (bRangeEnd - bRangeStart);
+        let bandVolume = bandTotal / (bRangeEnd - bRangeStart);
         bandVolume = bandVolume * band.volScale;
         if (bandVolume - band.volume > band.spikeTolerance) {
             band.isSpiking = true;
