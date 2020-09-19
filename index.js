@@ -69,29 +69,31 @@ var AUDIO, source, analyzer, maxFreq,
 /**
  * 'Band' (frequency range) class.
  **/
-function Band(
-    start = 20, end = 20000, threshold = DEFAULTS.threshold,
-    spikeTolerance = DEFAULTS.spikeTolerance, volScale = 1
-) {
-    this.start = rangeCheck(start);
-    this.end = rangeCheck(end);
-    this.volScale = volScale;
+class Band {
+    constructor(
+        start = 20, end = 20000, threshold = DEFAULTS.threshold,
+        spikeTolerance = DEFAULTS.spikeTolerance, volScale = 1
+    ) {
+        this.start = rangeCheck(start);
+        this.end = rangeCheck(end);
+        this.volScale = volScale;
 
-    this.volume = 0;
+        this.volume = 0;
 
-    this.isOverThreshold = false;
-    this.isSpiking = false;
+        this.isOverThreshold = false;
+        this.isSpiking = false;
 
-    this._onSpike = function(spikeAmount) {
-        // TODO: fire event
+        this._onSpike = function(spikeAmount) {
+            // TODO: fire event
 
-    };
+        };
 
-    this._onThreshold = function() {
-        const over = this.volume - this.threshold;
-        // TODO: fire event
+        this._onThreshold = function() {
+            const over = this.volume - this.threshold;
+            // TODO: fire event
 
-    };
+        };
+    }
 }
 
 var Pumper = {};
