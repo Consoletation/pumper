@@ -60,11 +60,7 @@ function rangeCheck(freq) {
     }
 }
 
-var AUDIO, source, analyzer, maxFreq,
-    timeData, freqData,
-    timeDataLength, freqDataLength,
-    micStream;
-
+var maxFreq;
 
 /**
  * 'Band' (frequency range) class.
@@ -105,6 +101,10 @@ class Pumper {
         this.globalSpikeTolerance = DEFAULTS.spikeTolerance;
         this.sensitivity = 1;
 
+        this._audio = null;
+        this._analyzer = null;
+        this._micStream = null;
+        this._source = null;
         this.timeData = null;
         this.timeDataLength = 0;
         this.freqData = null;
@@ -126,24 +126,24 @@ class Pumper {
 
 
         // Init Web Audio API context
-        AUDIO = new(window.AudioContext || window.webkitAudioContext)();
-        if (!AUDIO) throw 'Pumper error: Web Audio API not supported :(';
+        this._audio = new(window.AudioContext || window.webkitAudioContext)();
+        if (!this._audio) throw 'Pumper error: Web Audio API not supported :(';
 
         // Set up analyzer and buffers
-        analyzer = AUDIO.createAnalyser();
-        maxFreq = AUDIO.sampleRate / 2;
-        analyzer.fftSize = Math.pow(2, precision);
-        analyzer.minDecibels = -90;
-        analyzer.maxDecibels = -10;
+        this._analyzer = this._audio.createAnalyser();
+        maxFreq = this._audio.sampleRate / 2;
+        this._analyzer.fftSize = Math.pow(2, precision);
+        this._analyzer.minDecibels = -90;
+        this._analyzer.maxDecibels = -10;
 
         this.start = rangeCheck(start);
         this.end = rangeCheck(end);
 
-        this.freqDataLength = freqDataLength = analyzer.frequencyBinCount;
-        this.timeDataLength = timeDataLength = analyzer.frequencyBinCount;
+        this.freqDataLength = analyzer.frequencyBinCount;
+        this.timeDataLength = analyzer.frequencyBinCount;
 
-        this.freqData = freqData = new Uint8Array(freqDataLength);
-        this.timeData = timeData = new Uint8Array(timeDataLength);
+        this.freqData = new Uint8Array(this.freqDataLength);
+        this.timeData = new Uint8Array(this.timeDataLength);
 
         if (FORCE_MIC || srcValue === 'mic') {
             // Request mic access, create source node and connect to analyzer
@@ -159,10 +159,10 @@ class Pumper {
                     video: false
                 },
                 function(stream) {
-                    micStream = stream;
+                    this._micStream = stream;
                     // TODO: throw 'ready' event
-                    source = AUDIO.createMediaStreamSource(stream);
-                    source.connect(analyzer); // Don't connect mic to output
+                    this._source = this._audio.createMediaStreamSource(stream);
+                    this._source.connect(analyzer); // Don't connect mic to output
                     console.log('Pumper: mic stream ready');
                 },
                 function(error) {
@@ -174,13 +174,13 @@ class Pumper {
             var track = document.createElement('audio');
             track.setAttribute('src', srcValue);
             track.crossOrigin = 'anonymous';
-            source = AUDIO.createMediaElementSource(track);
-            source.connect(analyzer);
-            analyzer.connect(AUDIO.destination);
+            this._source = this._audio.createMediaElementSource(track);
+            this._source.connect(analyzer);
+            analyzer.connect(this._audio.destination);
 
             track.addEventListener('loadeddata', function() {
                 // TODO: throw 'ready' event
-                console.log('Pumper: track ready', source);
+                console.log('Pumper: track ready', this._source);
             }, false);
         }
     }
@@ -189,18 +189,18 @@ class Pumper {
      * Plays the source node if it's a media element.
      **/
     play() {
-        if (!source instanceof MediaElementAudioSourceNode) {
+        if (!this._source instanceof MediaElementAudioSourceNode) {
             throw 'Pumper: Source is not ready or is not a media element';
             return false;
         }
-        source.mediaElement.play();
+        this._source.mediaElement.play();
     }
 
     /**
      * Resumes the audio context.
      **/
     resume() {
-        AUDIO.resume();
+        this._audio.resume();
     }
 
     /**
@@ -244,13 +244,11 @@ class Pumper {
      **/
     update() {
         // Update maxFreq in case sample rate changed
-        maxFreq = AUDIO.sampleRate / 2;
+        maxFreq = this._audio.sampleRate / 2;
 
-        analyzer.getByteFrequencyData(freqData);
-        this.freqData = freqData;
+        analyzer.getByteFrequencyData(this.freqData);
 
-        analyzer.getByteTimeDomainData(timeData);
-        this.timeData = timeData;
+        analyzer.getByteTimeDomainData(this.timeData);
 
         // Calc global volume
         const rangeStart = Math.round(this.start / maxFreq * (this.freqDataLength - 1));
