@@ -301,4 +301,4 @@ class Pumper {
     }
 }
 
-module.exports = Pumper;
+export default Pumper;
