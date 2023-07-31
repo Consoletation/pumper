@@ -176,9 +176,7 @@ class Pumper {
     sensitivity: number = 1;
 
     timeData: Uint8Array;
-    timeDataLength: number;
     freqData: Uint8Array;
-    freqDataLength: number;
 
     bands: Band[] = [];
 
@@ -218,10 +216,8 @@ class Pumper {
         this.maxFreq = this.AUDIO.sampleRate / 2;
 
         // Set up buffers
-        this.timeDataLength = this.analyzer.frequencyBinCount;
-        this.timeData = new Uint8Array(this.timeDataLength);
-        this.freqDataLength = this.analyzer.frequencyBinCount;
-        this.freqData = new Uint8Array(this.freqDataLength);
+        this.timeData = new Uint8Array(this.analyzer.frequencyBinCount);
+        this.freqData = new Uint8Array(this.analyzer.frequencyBinCount);
     }
 
     static _err(msg: string) {
@@ -386,8 +382,8 @@ class Pumper {
             this.analyzer.getByteTimeDomainData(this.timeData);
 
             // Calc global volume
-            const rangeStart = Math.round((this.startFreq / this.maxFreq) * (this.freqDataLength - 1));
-            const rangeEnd = Math.round((this.endFreq / this.maxFreq) * (this.freqDataLength - 1));
+            const rangeStart = Math.round((this.startFreq / this.maxFreq) * (this.freqData.length - 1));
+            const rangeEnd = Math.round((this.endFreq / this.maxFreq) * (this.freqData.length - 1));
 
             let globTotal = 0;
             for (let i = rangeStart; i <= rangeEnd; i++) {
@@ -413,8 +409,8 @@ class Pumper {
             // Calc band volume levels
             // TODO: optimize this
             this.bands.forEach(band => {
-                const bRangeStart = Math.round((band.startFreq / this.maxFreq) * (this.freqDataLength - 1));
-                const bRangeEnd = Math.round((band.endFreq / this.maxFreq) * (this.freqDataLength - 1));
+                const bRangeStart = Math.round((band.startFreq / this.maxFreq) * (this.freqData.length - 1));
+                const bRangeEnd = Math.round((band.endFreq / this.maxFreq) * (this.freqData.length - 1));
 
                 let bandTotal = 0;
                 for (let i = bRangeStart; i <= bRangeEnd; i++) {
