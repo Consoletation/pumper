@@ -183,7 +183,6 @@ class Pumper {
     AUDIO!: AudioContext;
     source!: MediaStreamAudioSourceNode | MediaElementAudioSourceNode;
     analyzer!: AnalyserNode;
-    maxFreq!: number;
     startFreq!: number;
     endFreq!: number;
 
@@ -213,11 +212,14 @@ class Pumper {
         this.analyzer.fftSize = Math.pow(2, precision);
         this.analyzer.minDecibels = -90;
         this.analyzer.maxDecibels = -10;
-        this.maxFreq = this.AUDIO.sampleRate / 2;
 
         // Set up buffers
         this.timeData = new Uint8Array(this.analyzer.frequencyBinCount);
         this.freqData = new Uint8Array(this.analyzer.frequencyBinCount);
+    }
+
+    get maxFreq() {
+        return this.AUDIO.sampleRate / 2;
     }
 
     static _err(msg: string) {
@@ -375,8 +377,6 @@ class Pumper {
     update() {
         // Throw error is source is not ready
         if (this.source instanceof MediaElementAudioSourceNode || this.source instanceof MediaStreamAudioSourceNode) {
-            // Update maxFreq in case it's changed
-            this.maxFreq = this.AUDIO.sampleRate / 2;
 
             this.analyzer.getByteFrequencyData(this.freqData);
             this.analyzer.getByteTimeDomainData(this.timeData);
