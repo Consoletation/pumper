@@ -11,7 +11,7 @@ a web audio stream (media or microphone) easier. Created it for this project so
 we can easily react to volume levels and frequency spikes for reactive Canvas/GL
 visualizations.
 
-Instantiated as a singleton - pass it around the app via require().
+Instantiated via new.
 
 <p align="center"><b>
   <a href="https://github.com/Consoletation/stream-webvfx">Example Projects</a>
@@ -43,13 +43,15 @@ Exposed properties:
 - `Pumper.timeData` - raw time domain data array
 
 ## Examples
-- `Pumper.start('mic', 1160, 14000, 13)`
+- `const pumper = new Pumper()`
+  Creates a new instance of the Pumper class.
+- `pumper.start('mic', 1160, 14000, 13)`
   Initializes Pumper and uses default audio input as source.
-- `Pumper.createBands(80, 220, 10, 1, 1.25, 0.5)`
+- `pumper.createBands(80, 220, 10, 1, 1.25, 0.5)`
   Create a set of bands (10) over bass frequencies:
      - Volume of first band is 1x, last band is 1.25x multiplied
      - Bleed amount of 0.5 (overlap halfway with each band)
-- `Pumper.update()`
+- `pumper.update()`
   Updates the frequency data of global and band values, and calculates volume
-- `Pumper.bands[0].volume`
+- `pumper.bands[0].volume`
   Volume of the first bass band we created

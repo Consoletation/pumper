@@ -16,5 +16,8 @@
     "bugs": {
         "url": "https://github.com/Consoletation/pumper/issues"
     },
-    "homepage": "https://github.com/Consoletation/pumper#readme"
+    "homepage": "https://github.com/Consoletation/pumper#readme",
+    "dependencies": {
+        "webrtc-adapter": "^8.2.3"
+    }
 }
