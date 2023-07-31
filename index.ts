@@ -27,8 +27,8 @@
  * Exposed properties:
  * - Pumper.bands - array of all Band instances in the order they were created
  * - Pumper.volume - current global average volume level. Set via Pumper.update()
- * - Pumper.globalSpikeTolerance - distance over which a volume change is considered a spike
- * - Pumper.globalThreshold - arbitrary threshold value for global volume level
+ * - Pumper.spikeTolerance - distance over which a volume change is considered a spike
+ * - Pumper.threshold - arbitrary threshold value for global volume level
  * - Pumper.isSpiking - true if there was a volume spike since the last time update() was called
  * - Pumper.isOverThreshold - true if the current global volume exceeds the set global threshold
  * - Pumper.freqData - raw frequency data array
@@ -120,6 +120,36 @@ async function getLowLatencyMedia(
 }
 
 /**
+ * Update volume and spike status for a Band or Pumper instance.
+ * @param self - Band or Pumper instance
+ * @param freqData - raw frequency data array
+ * @param maxFreq - max frequency in the frequency data array
+ * @private
+ * @returns
+ **/
+function updateFromData(self: Pumper | Band, freqData: Uint8Array, maxFreq: number) {
+    const rangeStart = Math.round((self.startFreq / maxFreq) * (freqData.length - 1));
+    const rangeEnd = Math.round((self.endFreq / maxFreq) * (freqData.length - 1));
+    const total = freqData.slice(rangeStart, rangeEnd + 1).reduce((a, b) => a + b, 0);
+    const volume = (total / (rangeEnd - rangeStart)) * self.volScale;
+    const spike = volume - self.volume;
+
+    self.volume = volume;
+    if (spike > self.spikeTolerance) {
+        self.isSpiking = true;
+        self._onSpike(spike);
+    } else {
+        self.isSpiking = false;
+    }
+    if (volume > self.threshold) {
+        self.isOverThreshold = true;
+        self._onThreshold();
+    } else {
+        self.isOverThreshold = false;
+    }
+}
+
+/**
  * 'Band' (frequency range) class.
  **/
 class Band {
@@ -171,9 +201,9 @@ class Pumper {
     volume: number;
     isSpiking: boolean;
     isOverThreshold: boolean;
-    globalThreshold: number;
-    globalSpikeTolerance: number;
-    sensitivity: number = 1;
+    threshold: number;
+    spikeTolerance: number;
+    volScale: number;
 
     timeData: Uint8Array;
     freqData: Uint8Array;
@@ -199,9 +229,9 @@ class Pumper {
         this.volume = 0.0;
         this.isSpiking = false;
         this.isOverThreshold = false;
-        this.globalThreshold = DEFAULTS.threshold;
-        this.globalSpikeTolerance = DEFAULTS.spikeTolerance;
-        this.sensitivity = 1;
+        this.threshold = DEFAULTS.threshold;
+        this.spikeTolerance = DEFAULTS.spikeTolerance;
+        this.volScale = 1;
 
         // Init Web Audio API context
         this.AUDIO = new window.AudioContext();
@@ -228,6 +258,15 @@ class Pumper {
 
     static _warn(msg: string) {
         console.warn(`Pumper: ${msg}`);
+    }
+
+    _onSpike(spikeAmount: number) {
+        // TODO: fire event
+    }
+
+    _onThreshold() {
+        const over = this.volume - this.threshold;
+        // TODO: fire event
     }
 
     /**
@@ -360,8 +399,8 @@ class Pumper {
             const band = this.createBand(
                 start + (freqRange * i) / count - bleedVal, // start
                 start + (freqRange * (i + 1)) / count + bleedVal, // end
-                this.globalThreshold,
-                this.globalSpikeTolerance,
+                this.threshold,
+                this.spikeTolerance,
                 volStart + (volRange * i) / count, // volScale
             );
             bands.push(band);
@@ -382,55 +421,12 @@ class Pumper {
             this.analyzer.getByteTimeDomainData(this.timeData);
 
             // Calc global volume
-            const rangeStart = Math.round((this.startFreq / this.maxFreq) * (this.freqData.length - 1));
-            const rangeEnd = Math.round((this.endFreq / this.maxFreq) * (this.freqData.length - 1));
-
-            let globTotal = 0;
-            for (let i = rangeStart; i <= rangeEnd; i++) {
-                globTotal += this.freqData[i];
-            }
-
-            // TODO: add sensitivity control
             // TODO: fire global events
-
-            const globalVolume = globTotal / (rangeEnd - rangeStart);
-            if (globalVolume - this.volume > this.globalSpikeTolerance) {
-                this.isSpiking = true;
-            } else {
-                this.isSpiking = false;
-            }
-            this.volume = globalVolume;
-            if (this.volume > this.globalThreshold) {
-                this.isOverThreshold = true;
-            } else {
-                this.isOverThreshold = false;
-            }
+            updateFromData(this, this.freqData, this.maxFreq);
 
             // Calc band volume levels
-            // TODO: optimize this
             this.bands.forEach(band => {
-                const bRangeStart = Math.round((band.startFreq / this.maxFreq) * (this.freqData.length - 1));
-                const bRangeEnd = Math.round((band.endFreq / this.maxFreq) * (this.freqData.length - 1));
-
-                let bandTotal = 0;
-                for (let i = bRangeStart; i <= bRangeEnd; i++) {
-                    bandTotal += this.freqData[i];
-                }
-
-                const bandVolume = (bandTotal / (bRangeEnd - bRangeStart)) * band.volScale;
-                if (bandVolume - band.volume > band.spikeTolerance) {
-                    band.isSpiking = true;
-                    band._onSpike(bandVolume - band.volume);
-                } else {
-                    band.isSpiking = false;
-                }
-                band.volume = bandVolume;
-                if (band.volume > band.threshold) {
-                    band.isOverThreshold = true;
-                    band._onThreshold();
-                } else {
-                    band.isOverThreshold = false;
-                }
+                updateFromData(band, this.freqData, this.maxFreq);
             });
 
             return true;
