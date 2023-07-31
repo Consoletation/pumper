@@ -37,12 +37,17 @@
 
 import 'webrtc-adapter';
 
-const DEFAULTS = Object.freeze({
+type Defaults = {
+    threshold: number;
+    spikeTolerance: number;
+}
+
+const DEFAULTS: Defaults = Object.freeze({
     threshold: 127,
     spikeTolerance: 30,
 });
 
-function getURLParam(name, url = window.location.href) {
+function getURLParam(name: string, url = window.location.href) {
     const urlObj = new URL(url);
     return urlObj.searchParams.get(name);
 }
@@ -55,29 +60,41 @@ function getURLParam(name, url = window.location.href) {
  * @param fallback - if true, will return a regular stream if low latency stream fails
  * @returns {Promise<MediaStream>}
  **/
-async function getLowLatencyMedia(targetLatency = 0.003, maxLatency = 0.04, increment = 0.01, fallback = true) {
+async function getLowLatencyMedia(
+    targetLatency: number = 0.003,
+    maxLatency: number = 0.04,
+    increment: number = 0.01,
+    fallback: boolean = true
+): Promise<MediaStream> {
     let latency = targetLatency;
-    let stream = null;
+    let stream: MediaStream | null = null;
 
     while (!stream && latency <= maxLatency) {
+        const latencyConstraints: ConstrainDouble = {
+            max: maxLatency,
+            min: targetLatency,
+            exact: latency,
+            ideal: targetLatency,
+        };
         try {
             stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     echoCancellation: false,
                     noiseSuppression: false,
                     autoGainControl: false,
-                    latency: {
-                        min: latency,
-                        max: latency,
-                    },
+                    latency: latencyConstraints,
                 },
             });
-        } catch (err) {
-            if (err.name === 'OverconstrainedError' && err.constraint === 'latency') {
-                console.warn(`Failed to get media stream with latency ${latency}`);
-                latency += increment;
+        } catch (err: unknown) {
+            if (err instanceof OverconstrainedError) {
+                if (err.constraint === 'latency') {
+                    console.warn(`Failed to get media stream with latency ${latency}`);
+                    latency += increment;
+                } else {
+                    console.warn('contraints', err.constraint);
+                    throw err;
+                }
             } else {
-                console.warn('contraints', err.constraint);
                 throw err;
             }
         }
@@ -95,7 +112,7 @@ async function getLowLatencyMedia(targetLatency = 0.003, maxLatency = 0.04, incr
                 },
             });
         } catch (err) {
-            throw new Error('Failed to get media stream at all', err);
+            throw new Error('Failed to get media stream at all' + err);
         }
     }
 
@@ -106,42 +123,82 @@ async function getLowLatencyMedia(targetLatency = 0.003, maxLatency = 0.04, incr
  * 'Band' (frequency range) class.
  **/
 class Band {
+    startFreq: number;
+    endFreq: number;
+    threshold: number;
+    spikeTolerance: number;
+    volScale: number;
+    volume: number;
+    isOverThreshold: boolean;
+    isSpiking: boolean;
+
     /**
-     * @param start - frequency range start
-     * @param end - frequency range end
+     * @param startFreq - frequency range start
+     * @param endFreq - frequency range end
      * @param threshold - arbitrary threshold value for volume level
      * @param spikeTolerance - distance over which a volume change is considered a spike
      * @param volScale - optionally multiplies returned volume values
+     * @constructor
      **/
     constructor(
-        start = 20,
-        end = 20000,
+        startFreq = 20,
+        endFreq = 20000,
         threshold = DEFAULTS.threshold,
         spikeTolerance = DEFAULTS.spikeTolerance,
-        volScale = 1,
+        volScale = 1
     ) {
-        this.startFreq = start;
-        this.endFreq = end;
+        this.startFreq = startFreq;
+        this.endFreq = endFreq;
+        this.threshold = threshold;
+        this.spikeTolerance = spikeTolerance;
         this.volScale = volScale;
-
         this.volume = 0;
-
         this.isOverThreshold = false;
         this.isSpiking = false;
     }
 
-    _onSpike(spikeAmount) {
+    _onSpike(spikeAmount: number) {
         // TODO: fire event
     }
 
     _onThreshold() {
-        var over = this.volume - this.threshold;
+        const over = this.volume - this.threshold;
         // TODO: fire event
     }
 }
 
 class Pumper {
-    constructor() {
+    volume: number;
+    isSpiking: boolean;
+    isOverThreshold: boolean;
+    globalThreshold: number;
+    globalSpikeTolerance: number;
+    sensitivity: number = 1;
+
+    timeData: Uint8Array;
+    timeDataLength: number;
+    freqData: Uint8Array;
+    freqDataLength: number;
+
+    bands: Band[] = [];
+
+    AUDIO!: AudioContext;
+    source!: MediaStreamAudioSourceNode | MediaElementAudioSourceNode;
+    analyzer!: AnalyserNode;
+    maxFreq!: number;
+    startFreq!: number;
+    endFreq!: number;
+
+    /**
+     * @param startFreq - global frequency range start
+     * @param endFreq - global frequency range end
+     * @param precision - number of lookups the analyzer will have
+     * @constructor
+     * @throws {Error} if AudioContext is not supported
+     **/
+    constructor(start = 880, end = 7720, precision = 12) {
+        this.startFreq = start;
+        this.endFreq = end;
         this.volume = 0.0;
         this.isSpiking = false;
         this.isOverThreshold = false;
@@ -149,64 +206,51 @@ class Pumper {
         this.globalSpikeTolerance = DEFAULTS.spikeTolerance;
         this.sensitivity = 1;
 
-        this.timeData = null;
-        this.timeDataLength = 0;
-        this.freqData = null;
-        this.freqDataLength = 0;
+        // Init Web Audio API context
+        this.AUDIO = new window.AudioContext();
+        if (!this.AUDIO) Pumper._err('Failed to create AudioContext');
 
-        this.bands = [];
+        // Set up analyzer
+        this.analyzer = this.AUDIO.createAnalyser();
+        this.analyzer.fftSize = Math.pow(2, precision);
+        this.analyzer.minDecibels = -90;
+        this.analyzer.maxDecibels = -10;
+        this.maxFreq = this.AUDIO.sampleRate / 2;
+
+        // Set up buffers
+        this.timeDataLength = this.analyzer.frequencyBinCount;
+        this.timeData = new Uint8Array(this.timeDataLength);
+        this.freqDataLength = this.analyzer.frequencyBinCount;
+        this.freqData = new Uint8Array(this.freqDataLength);
     }
 
-    static _err(msg) {
+    static _err(msg: string) {
         throw new Error(`Pumper error: ${msg}`);
     }
 
-    static _warn(msg) {
+    static _warn(msg: string) {
         console.warn(`Pumper: ${msg}`);
     }
 
     /**
      * Start the engine.
      * @param srcValue - media URL or 'mic'
-     * @param startFreq - global frequency range start
-     * @param endFreq - global frequency range end
-     * @param precision - number of lookups the analyzer will have
-     * @returns {Promise<void>}
      **/
-    async start(srcValue, start = 880, end = 7720, precision = 12) {
-        if (!srcValue) Pumper._err('Missing "source" param');
+    async start(srcValue: string) {
+        if (!srcValue) {
+            const ipt = getURLParam('input');
+            if (ipt) {
+                srcValue = ipt;
+            } else {
+                Pumper._err('Missing "input" param');
+            }
+        }
 
-        const ipt = getURLParam('input');
-        console.log('URL PARAM', ipt);
-        if (ipt === 'mic') this.FORCE_MIC = true;
-
-        // Init Web Audio API context
-        this.AUDIO = new (window.AudioContext || window.webkitAudioContext)();
-        if (!this.AUDIO) Pumper._err('Web Audio API not supported :(');
-
-        // Set up analyzer and buffers
-        this.analyzer = this.AUDIO.createAnalyser();
-        this.maxFreq = this.AUDIO.sampleRate / 2;
-        this.analyzer.fftSize = Math.pow(2, precision);
-        this.analyzer.minDecibels = -90;
-        this.analyzer.maxDecibels = -10;
-        console.debug(`analyser: ${this.analyzer}`);
-
-        this.startFreq = start;
-        this.endFreq = end;
-
-        this.freqDataLength = this.analyzer.frequencyBinCount;
-        this.timeDataLength = this.analyzer.frequencyBinCount;
-
-        this.freqData = new Uint8Array(this.freqDataLength);
-        this.timeData = new Uint8Array(this.timeDataLength);
-
-        if (this.FORCE_MIC || srcValue === 'mic') {
+        if (srcValue === 'mic') {
             try {
                 // Request mic access, create source node and connect to analyzer
                 console.log('Pumper: requesting mic stream');
                 const stream = await getLowLatencyMedia();
-                window.stream = stream; // make stream available to console
                 const audioTracks = stream.getAudioTracks();
                 console.log('Using audio device: ' + audioTracks[0].label);
                 // TODO: throw 'ready' event
@@ -223,13 +267,14 @@ class Pumper {
             track.crossOrigin = 'anonymous';
             this.source = this.AUDIO.createMediaElementSource(track);
             this.source.connect(this.analyzer);
+            // Because element, connect to output
             this.analyzer.connect(this.AUDIO.destination);
 
-            return new Promise(resolve => {
+            // TODO: throw 'ready' event
+            return new Promise<void>(resolve => {
                 track.addEventListener(
                     'loadeddata',
                     () => {
-                        // TODO: throw 'ready' event
                         console.log('Pumper: track ready', this.source);
                         resolve();
                     },
@@ -244,11 +289,10 @@ class Pumper {
      * @return {boolean} - true if successful
      **/
     play() {
-        if (this.source instanceof MediaElementAudioSourceNode || this.source instanceof MediaStreamAudioSourceNode) {
-            this.source.mediaElement.play();
-            return true;
+        if (this.source instanceof MediaElementAudioSourceNode) {
+            return this.source.mediaElement.play();
         } else {
-            Pumper._warn('Source is not ready or is not a media element');
+            Pumper._warn('Source is not a media element');
             return false;
         }
     }
@@ -270,11 +314,11 @@ class Pumper {
      * @return {Band} - the new band
      **/
     createBand(
-        start = 20,
-        end = 20000,
-        threshold = DEFAULTS.threshold,
-        spikeTolerance = DEFAULTS.spikeTolerance,
-        volScale = 1,
+        start: number = 20,
+        end: number = 20000,
+        threshold: number = DEFAULTS.threshold,
+        spikeTolerance: number = DEFAULTS.spikeTolerance,
+        volScale: number = 1,
     ) {
         // Range check start and end
         if (start < 0 || start > this.maxFreq) Pumper._err(`Invalid start frequency: ${start}`);
@@ -296,7 +340,14 @@ class Pumper {
      * @param bleed - bleed factor
      * @return {Band[]} - the new bands
      **/
-    createBands(start = 20, end = 20000, count = 1, volStart = 1, volEnd = 1, bleed = 0.5) {
+    createBands(
+        start: number = 20,
+        end: number = 20000,
+        count: number = 1,
+        volStart: number = 1,
+        volEnd: number = 1,
+        bleed: number = 0.5
+    ) {
         // Range check start and end
         if (start < 0 || start > this.maxFreq) Pumper._err(`Invalid start frequency: ${start}`);
         if (end < 0 || end > this.maxFreq) Pumper._err(`Invalid end frequency: ${end}`);
@@ -326,6 +377,7 @@ class Pumper {
      * @throws {Error} - if source is not ready, a media element, or stream
      **/
     update() {
+        // Throw error is source is not ready
         if (this.source instanceof MediaElementAudioSourceNode || this.source instanceof MediaStreamAudioSourceNode) {
             // Update maxFreq in case it's changed
             this.maxFreq = this.AUDIO.sampleRate / 2;
@@ -379,7 +431,7 @@ class Pumper {
                 band.volume = bandVolume;
                 if (band.volume > band.threshold) {
                     band.isOverThreshold = true;
-                    band._onOverThreshold();
+                    band._onThreshold();
                 } else {
                     band.isOverThreshold = false;
                 }
@@ -387,7 +439,7 @@ class Pumper {
 
             return true;
         } else {
-            throw new Error('Source is not ready, a media element, or stream', this.source);
+            throw new Error('Source is not ready, a media element, or stream' + this.source);
         }
     }
 }
