@@ -48,6 +48,61 @@ function getURLParam(name, url = window.location.href) {
 }
 
 /**
+ * Get a media stream with low latency.
+ * @param targetLatency - target latency in seconds
+ * @param maxLatency - max latency in seconds
+ * @param increment - latency increment in reattempt
+ * @param fallback - if true, will return a regular stream if low latency stream fails
+ * @returns {Promise<MediaStream>}
+ **/
+async function getLowLatencyMedia(targetLatency = 0.003, maxLatency = 0.04, increment = 0.01, fallback = true) {
+    let latency = targetLatency;
+    let stream = null;
+
+    while (!stream && latency <= maxLatency) {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false,
+                    latency: {
+                        min: latency,
+                        max: latency,
+                    },
+                },
+            });
+        } catch (err) {
+            if (err.name === 'OverconstrainedError' && err.constraint === 'latency') {
+                console.warn(`Failed to get media stream with latency ${latency}`);
+                latency += increment;
+            } else {
+                console.warn('contraints', err.constraint);
+                throw err;
+            }
+        }
+    }
+
+    if (!stream) {
+        if (!fallback) throw new Error('Failed to get media stream with low latency');
+        console.warn('Failed to get media stream with low latency');
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false,
+                },
+            });
+        } catch (err) {
+            throw new Error('Failed to get media stream at all', err);
+        }
+    }
+
+    return stream;
+}
+
+/**
  * 'Band' (frequency range) class.
  **/
 class Band {
@@ -150,18 +205,7 @@ class Pumper {
             try {
                 // Request mic access, create source node and connect to analyzer
                 console.log('Pumper: requesting mic stream');
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: false,
-                        noiseSuppression: false,
-                        autoGainControl: false,
-                        latency: {
-                            exact: 0.003,
-                            ideal: 0.003,
-                        },
-                    },
-                    video: false,
-                });
+                const stream = await getLowLatencyMedia();
                 window.stream = stream; // make stream available to console
                 const audioTracks = stream.getAudioTracks();
                 console.log('Using audio device: ' + audioTracks[0].label);
