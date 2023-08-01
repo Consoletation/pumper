@@ -17,7 +17,7 @@
  *    - end: number - global frequency range end
  *    - precision: number - number of frequency range lookups
  *
- * - pumper.start(source)
+ * - pumper.load(source)
  *    - source can be a media URL or 'mic'
  *    - returns a Promise that resolves when the stream is ready
  *    - if source is 'mic', will request mic permissions
@@ -281,10 +281,10 @@ class Pumper {
     }
 
     /**
-     * Start the engine.
+     * Load a source.
      * @param srcValue - media URL or 'mic'
      **/
-    async start(srcValue: string) {
+    async load(srcValue: string) {
         if (!srcValue) {
             const ipt = getURLParam('input');
             if (ipt) {
