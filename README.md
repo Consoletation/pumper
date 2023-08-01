@@ -18,25 +18,36 @@ Instantiated via new.
 </b></p>
 
 ## API
-- `Pumper.start(source, start = 1920, end = 16800, precision = 11)`
-     - source can be a media URL or 'mic'
-     - 'start' and 'end' define the global frequency ranges
-     - precision will decide how many lookups the analyzer will have
+- `pumper = new Pumper(start, end, precision)`
+   - creates a new Pumper instance
+   - optionally pass in any of the following properties:
+   - start: number - global frequency range start
+   - end: number - global frequency range end
+   - precision: number - number of frequency range lookups
 
-- `Pumper.update()`
-     - updates all exposed properties with latest data
+- `pumper.start(source)`
+   - source can be a media URL or 'mic'
+   - returns a Promise that resolves when the stream is ready
+   - if source is 'mic', will request mic permissions
+   - if source is a URL, will attempt to fetch the media
 
-- `Pumper.createBand(start, end, threshold, spikeTolerance, volScale = 1)`
-     - creates a new frequency range monitor and returns the instance
-     - 'start' and 'end' define the band frequency ranges
-     - frequency range is scaled to global values
-     - 'volScale' optionally multiplies returned volume values
+- `pumper.createBand(start, end, threshold, spikeTolerance, volScale = 1)`
+   - creates a new frequency range monitor and returns the instance
+   - 'start' and 'end' define the band frequency ranges
+   - threshold: arbitrary threshold value for event triggering
+   - spikeTolerance: volume increase threshold for event triggering
+
+- `pumper.createBands(start, end, count, volStart, volEnd, bleed)`
+   - creates a series of frequency range monitors and returns the array
+
+- `pumper.update()`
+   - updates all exposed properties with latest data
 
 Exposed properties:
 - `Pumper.bands` - array of all Band instances in the order they were created
 - `Pumper.volume` - current global average volume level. Set via Pumper.update()
-- `Pumper.globalSpikeTolerance` - distance over which a volume change is considered a spike
-- `Pumper.globalThreshold` - arbitrary threshold value for global volume level
+- `Pumper.spikeTolerance` - distance over which a volume change is considered a spike
+- `Pumper.threshold` - arbitrary threshold value for global volume level
 - `Pumper.isSpiking` - true if there was a volume spike since the last time update() was called
 - `Pumper.isOverThreshold` - true if the current global volume exceeds the set global threshold
 - `Pumper.freqData` - raw frequency data array

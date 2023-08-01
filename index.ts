@@ -7,22 +7,33 @@
  * we can easily react to volume levels and frequency spikes for reactive Canvas/GL
  * visualizations.
  *
- * Instantiated as a singleton - pass it around the app via require().
+ * Instantiated via new.
  *
  * API:
- * - Pumper.start(source, start = 1920, end = 16800, precision = 12)
- *      - source can be a media URL or 'mic'
- *      - 'start' and 'end' define the global frequency ranges
- *      - precision will decide how many lookups the analyzer will have
+ * - pumper = new Pumper(start, end, precision)
+ *    - creates a new Pumper instance
+ *    - optionally pass in any of the following properties:
+ *    - start: number - global frequency range start
+ *    - end: number - global frequency range end
+ *    - precision: number - number of frequency range lookups
  *
- * - Pumper.update()
- *      - updates all exposed properties with latest data
+ * - pumper.start(source)
+ *    - source can be a media URL or 'mic'
+ *    - returns a Promise that resolves when the stream is ready
+ *    - if source is 'mic', will request mic permissions
+ *    - if source is a URL, will attempt to fetch the media
  *
- * - Pumper.createBand(start, end, threshold, spikeTolerance, volScale = 1)
- *      - creates a new frequency range monitor and returns the instance
- *      - 'start' and 'end' define the band frequency ranges
- *      - frequency range is scaled to global values
- *      - 'volScale' optionally multiplies returned volume values
+ * - pumper.createBand(start, end, threshold, spikeTolerance, volScale = 1)
+ *    - creates a new frequency range monitor and returns the instance
+ *    - 'start' and 'end' define the band frequency ranges
+ *    - threshold: arbitrary threshold value for event triggering
+ *    - spikeTolerance: volume increase threshold for event triggering
+ *
+ * - pumper.createBands(start, end, count, volStart, volEnd, bleed)
+ *    - creates a series of frequency range monitors and returns the array
+ *
+ * - pumper.update()
+ *    - updates all exposed properties with latest data
  *
  * Exposed properties:
  * - Pumper.bands - array of all Band instances in the order they were created
@@ -323,7 +334,7 @@ class Pumper {
 
     /**
      * Play the source node if it's a media element.
-     * @return {boolean} - true if successful
+     * @return - true if successful
      **/
     play() {
         if (this.source instanceof MediaElementAudioSourceNode) {
@@ -348,7 +359,7 @@ class Pumper {
      * @param threshold - volume threshold
      * @param spikeTolerance - spike tolerance
      * @param volScale - volume scale
-     * @return {Band} - the new band
+     * @return - the new band
      **/
     createBand(
         start: number = 20,
@@ -375,7 +386,7 @@ class Pumper {
      * @param volStart - start volume
      * @param volEnd - end volume
      * @param bleed - bleed factor
-     * @return {Band[]} - the new bands
+     * @return - the new bands
      **/
     createBands(
         start: number = 20,
@@ -410,7 +421,7 @@ class Pumper {
 
     /**
      * Perform analysis on the current audio, and update any registered bands.
-     * @return {boolean} - true if successful
+     * @return - true if successful
      * @throws {Error} - if source is not ready, a media element, or stream
      **/
     update() {
